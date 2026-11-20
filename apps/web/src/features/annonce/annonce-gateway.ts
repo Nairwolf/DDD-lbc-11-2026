@@ -81,10 +81,24 @@ export interface DeposerAnnonceArgs {
   pseudo: string
   email: string
   telephone: string
+  // The mot de passe de l'annonce, at least 8 characters; it only goes to the
+  // API, which keeps it hashed.
+  motDePasse: string
 }
 
 // The fields of DeposerAnnonceArgs, as the API names them in `champ`.
 export type ChampDepot = keyof DeposerAnnonceArgs
+
+// What a vendeur sends to withdraw an annonce: the mot de passe de l'annonce
+// and a code of the closed list of raisons.
+export interface SupprimerAnnonceArgs {
+  id: string
+  motDePasse: string
+  raison: string
+}
+
+// The fields of the suppression form, as the API names them in `champ`.
+export type ChampSuppression = 'motDePasse' | 'raison'
 
 // Port: what the UI needs from the API about annonces.
 export interface AnnonceGateway {
@@ -99,4 +113,8 @@ export interface AnnonceGateway {
   // Resolves to the ID of the new annonce. A refused dépôt rejects with an
   // ApiError whose `champ`, when set, names the field at fault.
   deposerAnnonce: (args: DeposerAnnonceArgs) => Promise<string>
+  // Resolves once the annonce is withdrawn. A refusal (wrong mot de passe,
+  // unknown raison) rejects with an ApiError whose `champ` names the field;
+  // an unknown or already supprimee annonce rejects with a 404.
+  supprimerAnnonce: (args: SupprimerAnnonceArgs) => Promise<void>
 }

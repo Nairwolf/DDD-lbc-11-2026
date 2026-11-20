@@ -19,6 +19,7 @@ func validArgs() NewAnnonceArgs {
 		Ville:       "Lyon",
 		CodePostal:  "69003",
 		Pseudo:      "cycliste69",
+		MotDePasse:  "demo1234",
 		Email:       "cycliste@example.com",
 		Telephone:   "0612345678",
 		DeposeeLe:   time.Date(2026, 11, 2, 10, 0, 0, 0, time.UTC),
@@ -160,4 +161,52 @@ func TestParseAnnonceID_AcceptsAUUID(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, id, parsed)
+}
+
+func TestNewAnnonce_RefusesAMissingOrTooShortMotDePasse(t *testing.T) {
+	for _, motDePasse := range []string{"", "1234567"} {
+		args := validArgs()
+		args.MotDePasse = motDePasse
+
+		_, err := NewAnnonce(args)
+
+		assert.ErrorIs(t, err, ErrMotDePasseTropCourt)
+	}
+}
+
+func TestNewAnnonce_KeepsAMotDePasseThatCorrespondsOnlyToTheSaisie(t *testing.T) {
+	annonce, err := NewAnnonce(validArgs())
+
+	require.NoError(t, err)
+	assert.True(t, annonce.MotDePasseCorrespond("demo1234"))
+	assert.False(t, annonce.MotDePasseCorrespond("demo12345"))
+}
+
+func TestSupprimer_WithdrawsTheAnnonceWithItsMotDePasse(t *testing.T) {
+	annonce, err := NewAnnonce(validArgs())
+	require.NoError(t, err)
+
+	require.NoError(t, annonce.Supprimer("demo1234"))
+
+	assert.Equal(t, Supprimee, annonce.Statut())
+	assert.False(t, annonce.EstActivee())
+}
+
+func TestSupprimer_RefusesAWrongMotDePasseAndKeepsTheAnnonceEnLigne(t *testing.T) {
+	annonce, err := NewAnnonce(validArgs())
+	require.NoError(t, err)
+
+	err = annonce.Supprimer("mauvais-mot")
+
+	assert.ErrorIs(t, err, ErrMotDePasseIncorrect)
+	assert.True(t, annonce.EstActivee())
+}
+
+func TestSupprimer_AnswersIntrouvableWhenAlreadySupprimee(t *testing.T) {
+	annonce, err := NewAnnonce(validArgs())
+	require.NoError(t, err)
+	require.NoError(t, annonce.Supprimer("demo1234"))
+
+	assert.ErrorIs(t, annonce.Supprimer("demo1234"), ErrAnnonceIntrouvable)
+	assert.ErrorIs(t, annonce.Supprimer("mauvais-mot"), ErrAnnonceIntrouvable)
 }

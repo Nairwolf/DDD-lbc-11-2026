@@ -23,6 +23,7 @@ const valeursInitiales: DeposerAnnonceValues = {
   pseudo: '',
   email: '',
   telephone: '',
+  motDePasse: '',
 }
 
 const champs = new Set<string>(Object.keys(valeursInitiales))
@@ -183,6 +184,22 @@ function DeposerAnnoncePage() {
                   type="tel"
                   inputMode="tel"
                   autoComplete="tel"
+                />
+              )}
+            </form.AppField>
+          </fieldset>
+
+          <fieldset className="flex flex-col gap-lg">
+            <legend className="mb-md text-headline-2">
+              Suppression de l'annonce
+            </legend>
+            <form.AppField name="motDePasse">
+              {(field) => (
+                <field.PasswordField
+                  label="Mot de passe de l'annonce"
+                  description="Au moins 8 caractères. Il vous sera demandé pour supprimer l'annonce : conservez-le."
+                  autoComplete="new-password"
+                  isRequired
                 />
               )}
             </form.AppField>

@@ -6,6 +6,9 @@ import (
 	"ddd-second-hand-marketplace/internal/annonce/domain"
 )
 
+// motDePasseDemo is the mot de passe of every demo annonce.
+const motDePasseDemo = "demo1234"
+
 // loadDemoAnnonces fills the repository with annonces to look at in
 // development, varied in categorie, prix and region, and returns their IDs.
 // Tests never load them.
@@ -80,6 +83,10 @@ func loadDemoAnnonces(repo domain.AnnonceRepository) ([]string, error) {
 			Ville:       "Saint-Denis", CodePostal: "93200", Pseudo: "dionysien", Email: "dionysien@example.com",
 			DeposeeLe: ago(200),
 		},
+	}
+
+	for i := range demo {
+		demo[i].MotDePasse = motDePasseDemo
 	}
 
 	ids := make([]string, 0, len(demo))

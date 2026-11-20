@@ -12,7 +12,7 @@ Shared terms: [`domain.md`](../../documentation/glossary/domain.md), [`technical
 - `internal/<bounded-context>/` — `domain/`, `application/{command,query}/`, `adapter/{driven,driving}/`, and its own `AGENTS.md`.
 - `pkg/eventbus/`, `pkg/mailer/` — shared infrastructure, each with its test helper under `testing/`.
 - Demo data: `cmd/api/demo_annonces.go` seeds a dozen annonces at startup and logs a link to one; `DEMO_DATA=off` skips them. Tests never load them: they build their own data.
-- Mailer: `newMailer` in `main.go` picks the SMTP mailer when `SMTP_ADDR` is set (Mailcatcher, `make mail`, UI on :1080), the fake mailer otherwise; the first use case that sends an email calls it. The SMTP mailer takes bare addresses only (no display name). Tests use the mailer spy, never SMTP.
+- Mailer: `newMailer` in `main.go` picks the SMTP mailer when `SMTP_ADDR` is set (Mailcatcher, `make mail`, UI on :1080), the fake mailer otherwise; `FRONTEND_URL` (default `http://localhost:3000`) is the base of the links in emails. The SMTP mailer takes bare addresses only (no display name). Tests use the mailer spy, never SMTP.
 
 Patterns, naming and the step-by-step workflow are in the `tactical-ddd` skill: **invoke it before implementing or refactoring**. A new bounded context starts with the `scaffold-bc` skill.
 

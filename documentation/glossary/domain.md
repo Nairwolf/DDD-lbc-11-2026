@@ -16,4 +16,7 @@ la parenthèse seulement si le nom diffère.
 - **Annonce** — un bien qu'un vendeur met en vente.
 - **Vendeur** — la personne qui dépose une annonce, sans compte.
 - **Acheteur** — la personne qui recherche et consulte des annonces.
-- **Annonce déposée** (`AnnonceDeposee`) — l'événement d'un dépôt, auquel la modération se branchera.
+- **Annonce déposée** (`AnnonceDeposee`) — l'événement d'un dépôt ; il déclenche l'email de confirmation de dépôt, la modération s'y branchera.
+- **Mot de passe de l'annonce** (`MotDePasse`) — choisi par le vendeur au dépôt (8 caractères minimum), conservé haché ; il autorisera la suppression.
+- **Annonce supprimée** (`AnnonceSupprimee`) — le vendeur a retiré son annonce avec son mot de passe ; statut `Supprimee`, elle n'est plus en ligne.
+- **Raison de suppression** (`RaisonSuppression`) — pourquoi le vendeur retire son annonce, un code d'une liste fermée ; seul l'événement la porte.

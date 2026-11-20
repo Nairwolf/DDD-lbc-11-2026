@@ -34,6 +34,7 @@ func validCommandArgs() DeposerAnnonceCommandArgs {
 		Ville:       "Lyon",
 		CodePostal:  "69003",
 		Pseudo:      "cycliste69",
+		MotDePasse:  "demo1234",
 		Email:       "cycliste@example.com",
 		Telephone:   "",
 	}
@@ -98,4 +99,34 @@ func TestDeposerAnnonce_RejectsAnInvalidAnnonceWithoutPublishing(t *testing.T) {
 	require.ErrorIs(t, err, domain.ErrTitreInvalide)
 	assert.Empty(t, id)
 	assert.Empty(t, collector.GetEvents())
+}
+
+func TestDeposerAnnonce_StoresTheMotDePasseHashed(t *testing.T) {
+	deposerAnnonce, repo, _ := setupDeposerAnnonce(t)
+
+	id, err := deposerAnnonce(validCommandArgs())
+
+	require.NoError(t, err)
+	stored, err := repo.GetByID(id)
+	require.NoError(t, err)
+	assert.True(t, stored.MotDePasseCorrespond("demo1234"))
+	assert.False(t, stored.MotDePasseCorrespond("autre-mot"))
+}
+
+func TestDeposerAnnonce_RefusesAMotDePasseTooShortOrMissing(t *testing.T) {
+	for _, motDePasse := range []string{"", "1234567"} {
+		deposerAnnonce, repo, collector := setupDeposerAnnonce(t)
+		args := validCommandArgs()
+		args.MotDePasse = motDePasse
+
+		_, err := deposerAnnonce(args)
+
+		assert.ErrorIs(t, err, domain.ErrMotDePasseTropCourt)
+		assert.Empty(t, collector.GetEvents())
+		page, err := domain.NewPage(0)
+		require.NoError(t, err)
+		resultat, err := repo.Rechercher(domain.CriteresRecherche{}, page)
+		require.NoError(t, err)
+		assert.Zero(t, resultat.Total)
+	}
 }

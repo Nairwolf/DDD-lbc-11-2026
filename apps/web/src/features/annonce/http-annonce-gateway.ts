@@ -69,5 +69,11 @@ export function createHttpAnnonceGateway(): AnnonceGateway {
       })
       return id
     },
+    supprimerAnnonce: async ({ id, motDePasse, raison }) => {
+      await request<void>(`/annonces/${encodeURIComponent(id)}/suppression`, {
+        method: 'POST',
+        body: JSON.stringify({ motDePasse, raison }),
+      })
+    },
   }
 }

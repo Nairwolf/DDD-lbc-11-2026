@@ -8,11 +8,13 @@ import (
 	"github.com/google/uuid"
 )
 
-// Statut of an annonce. Activee is the only one so far: moderation will add
-// the others.
+// Statut of an annonce. Moderation will add more.
 type Statut string
 
-const Activee Statut = "Activee"
+const (
+	Activee   Statut = "Activee"
+	Supprimee Statut = "Supprimee"
+)
 
 // Annonce is the aggregate root: a good a vendeur puts up for sale.
 type Annonce struct {
@@ -23,6 +25,7 @@ type Annonce struct {
 	categorie    Categorie
 	localisation Localisation
 	vendeur      Vendeur
+	motDePasse   MotDePasse
 	images       []string
 	deposeeLe    time.Time
 	statut       Statut
@@ -48,6 +51,7 @@ type NewAnnonceArgs struct {
 	Pseudo      string
 	Email       string
 	Telephone   string
+	MotDePasse  string // clear text, hashed by the constructor and never kept
 	DeposeeLe   time.Time
 }
 
@@ -83,6 +87,10 @@ func RestoreAnnonce(id string, statut Statut, args NewAnnonceArgs) (*Annonce, er
 	if err != nil {
 		return nil, err
 	}
+	motDePasse, err := NewMotDePasse(args.MotDePasse)
+	if err != nil {
+		return nil, err
+	}
 	return &Annonce{
 		id:           id,
 		titre:        titre,
@@ -91,6 +99,7 @@ func RestoreAnnonce(id string, statut Statut, args NewAnnonceArgs) (*Annonce, er
 		categorie:    categorie,
 		localisation: localisation,
 		vendeur:      vendeur,
+		motDePasse:   motDePasse,
 		images:       []string{},
 		deposeeLe:    args.DeposeeLe,
 		statut:       statut,
@@ -113,7 +122,25 @@ func (a *Annonce) Prix() Prix                 { return a.prix }
 func (a *Annonce) Categorie() Categorie       { return a.categorie }
 func (a *Annonce) Localisation() Localisation { return a.localisation }
 func (a *Annonce) Vendeur() Vendeur           { return a.vendeur }
-func (a *Annonce) Images() []string           { return append([]string{}, a.images...) }
-func (a *Annonce) DeposeeLe() time.Time       { return a.deposeeLe }
-func (a *Annonce) Statut() Statut             { return a.statut }
-func (a *Annonce) EstActivee() bool           { return a.statut == Activee }
+
+// MotDePasseCorrespond tells whether saisie is the mot de passe de l'annonce.
+func (a *Annonce) MotDePasseCorrespond(saisie string) bool { return a.motDePasse.Correspond(saisie) }
+func (a *Annonce) Images() []string                        { return append([]string{}, a.images...) }
+func (a *Annonce) DeposeeLe() time.Time                    { return a.deposeeLe }
+func (a *Annonce) Statut() Statut                          { return a.statut }
+func (a *Annonce) EstActivee() bool                        { return a.statut == Activee }
+
+// Supprimer withdraws the annonce when saisie is its mot de passe. A
+// non-activee annonce answers ErrAnnonceIntrouvable, so that its existence
+// does not leak; a wrong mot de passe answers ErrMotDePasseIncorrect and
+// leaves the annonce en ligne.
+func (a *Annonce) Supprimer(saisie string) error {
+	if !a.EstActivee() {
+		return ErrAnnonceIntrouvable
+	}
+	if !a.MotDePasseCorrespond(saisie) {
+		return ErrMotDePasseIncorrect
+	}
+	a.statut = Supprimee
+	return nil
+}

@@ -31,6 +31,7 @@ func setupHandler(t *testing.T) (*inmemory.InMemoryAnnonceRepository, *http.Serv
 		query.BuildRechercherAnnoncesQuery(repo),
 		query.BuildListerRegionsQuery(),
 		command.BuildDeposerAnnonceCommand(repo, bus, func() time.Time { return maintenant }),
+		command.BuildSupprimerAnnonceCommand(repo, bus, func() time.Time { return maintenant }),
 	).RegisterRoutes(mux)
 	return repo, mux
 }
@@ -54,7 +55,7 @@ func TestConsulterAnnonce_AnswersTheAnnonceInFrenchJSON(t *testing.T) {
 	annonce, err := domain.NewAnnonce(domain.NewAnnonceArgs{
 		Titre: "Lot de livres", Description: "Romans de poche, à donner.", Prix: 0,
 		Categorie: "loisirs", Ville: "Saint-Denis", CodePostal: "97400",
-		Pseudo: "lectrice", Email: "lectrice@example.com", Telephone: "0692000000",
+		Pseudo: "lectrice", MotDePasse: "demo1234", Email: "lectrice@example.com", Telephone: "0692000000",
 		DeposeeLe: time.Date(2026, 11, 2, 10, 0, 0, 0, time.UTC),
 	})
 	require.NoError(t, err)
@@ -111,7 +112,8 @@ const depotValide = `{
 	"codePostal": "69003",
 	"pseudo": "cycliste69",
 	"email": "cycliste@example.com",
-	"telephone": "0612345678"
+	"telephone": "0612345678",
+	"motDePasse": "demo1234"
 }`
 
 func TestDeposerAnnonce_AnswersCreatedWithTheNewID(t *testing.T) {
@@ -128,6 +130,19 @@ func TestDeposerAnnonce_AnswersCreatedWithTheNewID(t *testing.T) {
 	assert.Equal(t, "Vélo de course", stored.Titre())
 	assert.Equal(t, maintenant, stored.DeposeeLe())
 	assert.Equal(t, "0612345678", stored.Vendeur().Telephone())
+	assert.True(t, stored.MotDePasseCorrespond("demo1234"))
+}
+
+func TestDeposerAnnonce_NeverEchoesTheMotDePasse(t *testing.T) {
+	_, mux := setupHandler(t)
+	var body DeposerAnnonceResponse
+	created := post(mux, "/annonces", depotValide)
+	require.NoError(t, json.NewDecoder(created.Body).Decode(&body))
+
+	rec := get(mux, "/annonces/"+body.ID)
+
+	assert.NotContains(t, strings.ToLower(rec.Body.String()), "demo1234")
+	assert.NotContains(t, strings.ToLower(rec.Body.String()), "motdepasse")
 }
 
 func TestDeposerAnnonce_TheNewAnnonceCanBeConsulted(t *testing.T) {
@@ -166,6 +181,9 @@ func TestDeposerAnnonce_AnswersBadRequestNamingTheField(t *testing.T) {
 		{"departement", `"codePostal": "69003"`, `"codePostal": "96000"`, "codePostal", "Le code postal ne désigne aucun département"},
 		{"pseudo", `"pseudo": "cycliste69"`, `"pseudo": "c"`, "pseudo", "Le pseudo doit comporter de 2 à 30 caractères"},
 		{"email", `"email": "cycliste@example.com"`, `"email": "cycliste"`, "email", "L'email n'est pas valide"},
+		{"mot de passe trop court", `"motDePasse": "demo1234"`, `"motDePasse": "court"`, "motDePasse", "Le mot de passe de l'annonce doit comporter au moins 8 caractères"},
+		{"mot de passe manquant", `,
+	"motDePasse": "demo1234"`, ``, "motDePasse", "Le mot de passe de l'annonce doit comporter au moins 8 caractères"},
 		{"telephone", `"telephone": "0612345678"`, `"telephone": "12"`, "telephone", "Le téléphone doit comporter 10 chiffres et commencer par 0"},
 	}
 	for _, tt := range tests {

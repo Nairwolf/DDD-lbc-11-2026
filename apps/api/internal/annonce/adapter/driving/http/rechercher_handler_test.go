@@ -19,7 +19,7 @@ func saveVelo(t *testing.T, repo *inmemory.InMemoryAnnonceRepository, titre stri
 	annonce, err := domain.NewAnnonce(domain.NewAnnonceArgs{
 		Titre: titre, Description: "Bon état général, à venir chercher.", Prix: prix,
 		Categorie: "loisirs", Ville: "Saint-Étienne", CodePostal: "42000",
-		Pseudo: "stephanois", Email: "stephanois@example.com", DeposeeLe: deposeeLe,
+		Pseudo: "stephanois", MotDePasse: "demo1234", Email: "stephanois@example.com", DeposeeLe: deposeeLe,
 	})
 	require.NoError(t, err)
 	require.NoError(t, repo.Save(annonce))
@@ -165,7 +165,7 @@ func saveAnnonceA(t *testing.T, repo *inmemory.InMemoryAnnonceRepository, titre,
 	annonce, err := domain.NewAnnonce(domain.NewAnnonceArgs{
 		Titre: titre, Description: "Bon état général, à venir chercher.", Prix: 1000,
 		Categorie: "maison-jardin", Ville: ville, CodePostal: codePostal,
-		Pseudo: "voisin", Email: "voisin@example.com", DeposeeLe: maintenant,
+		Pseudo: "voisin", MotDePasse: "demo1234", Email: "voisin@example.com", DeposeeLe: maintenant,
 	})
 	require.NoError(t, err)
 	require.NoError(t, repo.Save(annonce))

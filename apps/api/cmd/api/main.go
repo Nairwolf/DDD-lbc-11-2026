@@ -9,6 +9,7 @@ import (
 	"time"
 
 	annonceinmemory "ddd-second-hand-marketplace/internal/annonce/adapter/driven/inmemory"
+	annonceconsumer "ddd-second-hand-marketplace/internal/annonce/adapter/driving/consumer"
 	annoncehttp "ddd-second-hand-marketplace/internal/annonce/adapter/driving/http"
 	annoncecommand "ddd-second-hand-marketplace/internal/annonce/application/command"
 	annoncequery "ddd-second-hand-marketplace/internal/annonce/application/query"
@@ -23,9 +24,9 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	})
 
-	// Shared infrastructure. No consumer yet: moderation will subscribe to
-	// AnnonceDeposee.
+	// Shared infrastructure.
 	eventBus := eventbus.NewAsyncInMemoryEventBus()
+	mail := newMailer()
 
 	// Bounded context: annonce.
 	annonceRepository := annonceinmemory.NewInMemoryAnnonceRepository()
@@ -38,11 +39,17 @@ func main() {
 		}
 		fmt.Printf("Demo data: %d annonces loaded (set DEMO_DATA=off to skip), e.g. http://localhost:3000/annonces/%s\n", len(ids), ids[0])
 	}
+	if err := annonceconsumer.SubscribeConfirmationDepot(eventBus, annoncecommand.BuildEnvoyerConfirmationDepotCommand(
+		mail, "noreply@seconde-main.local", envOr("FRONTEND_URL", "http://localhost:3000"),
+	)); err != nil {
+		log.Fatalf("Consumer: %v", err)
+	}
 	annoncehttp.NewHandler(
 		annoncequery.BuildConsulterAnnonceQuery(annonceRepository),
 		annoncequery.BuildRechercherAnnoncesQuery(annonceRepository),
 		annoncequery.BuildListerRegionsQuery(),
 		annoncecommand.BuildDeposerAnnonceCommand(annonceRepository, eventBus, time.Now),
+		annoncecommand.BuildSupprimerAnnonceCommand(annonceRepository, eventBus, time.Now),
 	).RegisterRoutes(mux)
 
 	fmt.Println("Server starting on http://localhost:8080")
@@ -50,9 +57,15 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
 
+func envOr(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
 // newMailer sends through the SMTP server at SMTP_ADDR (Mailcatcher in
-// development), or falls back to the fake mailer that only logs. No use case
-// sends an email yet: call it in main to inject the first one that does.
+// development), or falls back to the fake mailer that only logs.
 func newMailer() mailer.Mailer {
 	addr := os.Getenv("SMTP_ADDR")
 	if addr == "" {

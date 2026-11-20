@@ -1,6 +1,6 @@
 # apps/web
 
-The frontend of the marketplace: a TanStack Start app whose pages reach the API only through gateways. The home page shows a search bar and the latest annonces; `/recherche` lists results, `/annonces/$id` shows one, `/annonces/deposer` deposits one.
+The frontend of the marketplace: a TanStack Start app whose pages reach the API only through gateways. The home page shows a search bar and the latest annonces; `/recherche` lists results, `/annonces/$id` shows one, `/annonces/deposer` deposits one, `/annonces/$id/supprimer` withdraws one (file `$id_.supprimer.tsx`: the `_` keeps it from nesting under the `$id` page, which has no outlet).
 
 ## Language
 

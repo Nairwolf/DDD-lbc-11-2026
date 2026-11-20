@@ -4,6 +4,7 @@ import type {
   AnnonceGateway,
   CriteresRecherche,
   DeposerAnnonceArgs,
+  SupprimerAnnonceArgs,
 } from './annonce-gateway'
 
 export const annonceQueryOptions = (gateway: AnnonceGateway, id: string) =>
@@ -36,5 +37,15 @@ export const deposerAnnonceMutationOptions = (
 ) =>
   mutationOptions({
     mutationFn: (args: DeposerAnnonceArgs) => gateway.deposerAnnonce(args),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['annonces'] }),
+  })
+
+// A withdrawn annonce makes every read of annonces stale.
+export const supprimerAnnonceMutationOptions = (
+  gateway: AnnonceGateway,
+  queryClient: QueryClient,
+) =>
+  mutationOptions({
+    mutationFn: (args: SupprimerAnnonceArgs) => gateway.supprimerAnnonce(args),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['annonces'] }),
   })

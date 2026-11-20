@@ -1,9 +1,10 @@
 import { Button } from '@spark-ui/components/button'
 import { FormField } from '@spark-ui/components/form-field'
-import { Input } from '@spark-ui/components/input'
+import { Input, InputGroup } from '@spark-ui/components/input'
 import { Select as SparkSelect } from '@spark-ui/components/select'
 import { Textarea } from '@spark-ui/components/textarea'
 import { useStore } from '@tanstack/react-form'
+import { useState } from 'react'
 import type { ReactNode } from 'react'
 
 import { useFieldContext, useFormContext } from '#/hooks/form-context'
@@ -107,6 +108,49 @@ export function TextField({
         onBlur={field.handleBlur}
         onValueChange={field.handleChange}
       />
+    </Field>
+  )
+}
+
+// A text field for a secret, with a button that shows or hides what is typed.
+export function PasswordField({
+  label,
+  description,
+  autoComplete,
+  isRequired,
+}: {
+  label: string
+  description?: string
+  autoComplete?: string
+  isRequired?: boolean
+}) {
+  const field = useFieldContext<string>()
+  const [visible, setVisible] = useState(false)
+  const messages = useVisibleErrors()
+
+  return (
+    <Field label={label} description={description} isRequired={isRequired}>
+      <InputGroup state={messages.length > 0 ? 'error' : undefined}>
+        <Input
+          type={visible ? 'text' : 'password'}
+          autoComplete={autoComplete}
+          value={field.state.value}
+          onBlur={field.handleBlur}
+          onValueChange={field.handleChange}
+        />
+        <InputGroup.TrailingAddon>
+          <Button
+            type="button"
+            design="ghost"
+            intent="neutral"
+            size="sm"
+            aria-pressed={visible}
+            onClick={() => setVisible((value) => !value)}
+          >
+            {visible ? 'Masquer' : 'Afficher'}
+          </Button>
+        </InputGroup.TrailingAddon>
+      </InputGroup>
     </Field>
   )
 }

@@ -17,6 +17,7 @@ const valid: DeposerAnnonceValues = {
   pseudo: 'cycliste69',
   email: 'cycliste@example.com',
   telephone: '',
+  motDePasse: 'demo1234',
 }
 
 const messagesFor = (values: Partial<DeposerAnnonceValues>) => {
@@ -38,6 +39,22 @@ describe('eurosEnCentimes', () => {
 
   it.each(['', 'abc', '-3', '1,234', '1e3'])('rejects %s', (euros) => {
     expect(eurosEnCentimes(euros)).toBeUndefined()
+  })
+})
+
+describe('deposerAnnonceSchema mot de passe', () => {
+  it('refuses fewer than 8 characters', () => {
+    expect(messagesFor({ motDePasse: 'court' })).toEqual([
+      "Le mot de passe de l'annonce doit comporter au moins 8 caractères",
+    ])
+    expect(messagesFor({ motDePasse: '' })).toHaveLength(1)
+  })
+
+  it('accepts 8 characters with no other rule and keeps it untrimmed', () => {
+    expect(
+      deposerAnnonceSchema.parse({ ...valid, motDePasse: 'aaaaaaaa' })
+        .motDePasse,
+    ).toBe('aaaaaaaa')
   })
 })
 

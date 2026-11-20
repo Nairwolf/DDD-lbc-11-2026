@@ -80,6 +80,14 @@ type DeposerAnnonceRequest struct {
 	Pseudo      string `json:"pseudo"`
 	Email       string `json:"email"`
 	Telephone   string `json:"telephone"`
+	MotDePasse  string `json:"motDePasse"`
+}
+
+// SupprimerAnnonceRequest is the body of POST /annonces/{id}/suppression.
+// Raison is a code of the closed list.
+type SupprimerAnnonceRequest struct {
+	MotDePasse string `json:"motDePasse"`
+	Raison     string `json:"raison"`
 }
 
 type DeposerAnnonceResponse struct {

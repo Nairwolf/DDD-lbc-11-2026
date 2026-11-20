@@ -17,7 +17,7 @@ func newAnnonce(t *testing.T) *domain.Annonce {
 	annonce, err := domain.NewAnnonce(domain.NewAnnonceArgs{
 		Titre: "Canapé", Description: "Canapé trois places.", Prix: 20000,
 		Categorie: "maison-jardin", Ville: "Nantes", CodePostal: "44000",
-		Pseudo: "nantais", Email: "nantais@example.com", DeposeeLe: time.Now(),
+		Pseudo: "nantais", MotDePasse: "demo1234", Email: "nantais@example.com", DeposeeLe: time.Now(),
 	})
 	require.NoError(t, err)
 	return annonce
@@ -47,7 +47,7 @@ func saveAnnonce(t *testing.T, repo *InMemoryAnnonceRepository, titre string, de
 	annonce, err := domain.RestoreAnnonce(uuid.NewString(), statut, domain.NewAnnonceArgs{
 		Titre: titre, Description: "Une description assez longue.", Prix: 1000,
 		Categorie: "autres", Ville: "Lille", CodePostal: "59000",
-		Pseudo: "lillois", Email: "lillois@example.com", DeposeeLe: deposeeLe,
+		Pseudo: "lillois", MotDePasse: "demo1234", Email: "lillois@example.com", DeposeeLe: deposeeLe,
 	})
 	require.NoError(t, err)
 	require.NoError(t, repo.Save(annonce))
@@ -135,7 +135,7 @@ func saveAnnonceA(t *testing.T, repo *InMemoryAnnonceRepository, titre, categori
 	annonce, err := domain.NewAnnonce(domain.NewAnnonceArgs{
 		Titre: titre, Description: "Une description assez longue.", Prix: prix,
 		Categorie: categorie, Ville: "Lille", CodePostal: "59000",
-		Pseudo: "lillois", Email: "lillois@example.com", DeposeeLe: deposeeLe,
+		Pseudo: "lillois", MotDePasse: "demo1234", Email: "lillois@example.com", DeposeeLe: deposeeLe,
 	})
 	require.NoError(t, err)
 	require.NoError(t, repo.Save(annonce))
@@ -194,7 +194,7 @@ func saveAnnonceAVille(t *testing.T, repo *InMemoryAnnonceRepository, titre, vil
 	annonce, err := domain.NewAnnonce(domain.NewAnnonceArgs{
 		Titre: titre, Description: "Une description assez longue.", Prix: 1000,
 		Categorie: "autres", Ville: ville, CodePostal: codePostal,
-		Pseudo: "voisin", Email: "voisin@example.com", DeposeeLe: deposeeLe,
+		Pseudo: "voisin", MotDePasse: "demo1234", Email: "voisin@example.com", DeposeeLe: deposeeLe,
 	})
 	require.NoError(t, err)
 	require.NoError(t, repo.Save(annonce))

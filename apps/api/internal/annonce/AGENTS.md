@@ -7,24 +7,30 @@ The core bounded context: the annonces vendeurs put up for sale and acheteurs co
 Shared terms: [`domain.md`](../../../../documentation/glossary/domain.md), [`technical.md`](../../../../documentation/glossary/technical.md).
 
 - `NewAnnonceArgs` — the primitives an `Annonce` is built from, shared by `NewAnnonce` and `RestoreAnnonce`.
+- `MotDePasse` — value object: pbkdf2-sha256 hash with a random salt, `Correspond(saisie)`; no getter, the clear text and the hash never leave the domain.
+- `RaisonSuppression` — value object: closed list of codes (`vendue-sur-le-site`, `vendue-ailleurs`, `plus-envie-de-vendre`, `autre`), carried by `AnnonceSupprimee` only, never kept on the annonce.
 - `RestoreAnnonce` — rebuilds an annonce whose ID and `Statut` are known (persistence, tests); `NewAnnonce` always makes a fresh UUID, `Activee`.
 
 ## Boundaries
 
-- Driving: the HTTP handler (`GET /annonces`, `GET /annonces/{id}`, `POST /annonces`, `GET /regions`, mounted by `RegisterRoutes`). No consumer yet.
-- Events produced: `AnnonceDeposee` (carries the `*Annonce`), on the async bus of `main.go`; no subscriber yet, moderation will be the first. Events consumed: none.
+- Driving: the HTTP handler (`GET /annonces`, `GET /annonces/{id}`, `POST /annonces`, `POST /annonces/{id}/suppression`, `GET /regions`, mounted by `RegisterRoutes`); the consumer `adapter/driving/consumer` (`SubscribeConfirmationDepot`).
+- Events produced: `AnnonceDeposee` (carries the `*Annonce`), on the async bus of `main.go`; moderation will subscribe too. `AnnonceSupprimee` (ID, `Raison`, `SupprimeeLe`) has no consumer yet. Events consumed: its own `AnnonceDeposee`, to send the confirmation de dépôt through the mailer port.
 - Demo annonces are seeded by the composition root (`cmd/api/demo_annonces.go`), not by this context.
 
 ## Flows
 
-- Déposer annonce: `NewAnnonce` (dated by the injected clock, `Activee`) → `Save` → publish `AnnonceDeposee` → the ID, answered `201 {"id"}`. A validation error is a 400 `{"erreur", "champ"}`, `champ` being the JSON key at fault (table `invalidFields` in the handler); a missing `prix` is refused by the handler, not taken as a don.
+- Déposer annonce: `NewAnnonce` (dated by the injected clock, `Activee`) → `Save` → publish `AnnonceDeposee` → the ID, answered `201 {"id"}`. A validation error is a 400 `{"erreur", "champ"}`, `champ` being the JSON key at fault (table `invalidFields` in the handler); `motDePasse` (8+ characters, `ErrMotDePasseTropCourt`, 400 on `champ` `motDePasse`) is required and only hashed; a missing `prix` is refused by the handler, not taken as a don.
+- Confirmation de dépôt: `AnnonceDeposee` → consumer → `EnvoyerConfirmationDepotCommand` → mailer: subject « Votre annonce « {titre} » est en ligne », links `{FRONTEND_URL}/annonces/{id}` and `/supprimer` (default `http://localhost:3000`), fixed sender. A send failure is logged, never retried, and never fails the dépôt.
 - Rechercher annonces: `GET /annonces?motCle=&categorie=&prixMin=&prixMax=&region=&departement=&villeOuCodePostal=&page=` → `NewCriteresRecherche` + `NewPage` → `AnnonceRepository.Rechercher` (filter with `CriteresRecherche.Retient`, newest `deposeeLe` first, `ParPage` = 20) → `{"annonces", "total", "page", "parPage"}`. A page past the last is an empty list, not an error; a negative or non-integer page is a 400 on `champ` `page`. Prix bounds are integer centimes, both included (0–0 finds the dons); a negative or non-integer bound is a 400 on `prixMin`/`prixMax`, a minimum above the maximum a 400 on `prixMin`, an unknown catégorie a 400 on `categorie`. An unknown région or département is a 400 on `region`/`departement`, both at once a 400 on `region` (`ErrLieuAmbigu`); an incoherent lieu (Ajaccio in 93) is zero results, no error.
+- Supprimer annonce: `POST /annonces/{id}/suppression {motDePasse, raison}` → `ParseAnnonceID` → `NewRaisonSuppression` → `GetByID` → `Annonce.Supprimer` (statut `Supprimee`, stays in the repository) → `Save` → publish `AnnonceSupprimee` → `204`. Wrong mot de passe: `ErrMotDePasseIncorrect`, 400 on `champ` `motDePasse`; missing or unknown raison: 400 on `raison`; unknown or already supprimee: `ErrAnnonceIntrouvable` (404). Attempts are not limited.
 - Lister régions: `GET /regions` → `[{"code", "nom", "departements": [{"code", "nom"}]}]`, from the static table; feeds the lieu selector.
 - Consulter annonce: `ParseAnnonceID` → `GetByID` → `EstActivee` → `AnnonceView`. A malformed ID is `ErrIDAnnonceInvalide` (400); unknown or not activee is `ErrAnnonceIntrouvable` (404).
 
 ## Invariants and pitfalls
 
 - **A view never exposes the vendeur's email or telephone**: only the pseudo leaves the domain.
+- **The mot de passe never appears** in a view, an event, a log or a JSON response; `Annonce.MotDePasseCorrespond` is the only question asked. Demo annonces all use `demo1234`.
+- **The confirmation email never contains the mot de passe**, only the sentence that the suppression will ask for it.
 - **A non-activee annonce answers `ErrAnnonceIntrouvable`**, never a distinct error: its existence must not leak.
 - **Prix is in centimes**, zero is a don, no ceiling. The frontend converts to euros.
 - **Catégorie codes are stable** (`vehicules`, `maison-jardin`…): they travel in JSON and URLs; only the libellé is French prose.

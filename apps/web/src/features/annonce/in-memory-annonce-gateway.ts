@@ -1,5 +1,6 @@
 import { ApiError } from '#/lib/http'
 import { libelleDeCategorie } from './categories'
+import { raisonsDeSuppression } from './raisons-suppression'
 import type {
   Annonce,
   AnnonceGateway,
@@ -52,10 +53,16 @@ export function createInMemoryAnnonceGateway(
     regions?: Array<RegionAvecDepartements>
     // Makes every dépôt fail as the API would refuse it.
     depotRefuse?: { erreur: string; champ?: ChampDepot }
+    // The mot de passe of the annonces given above (default « demo1234 »).
+    motDePasse?: string
   } = {},
 ): AnnonceGateway {
   const annonces = new Map(
     (options.annonces ?? []).map((annonce) => [annonce.id, annonce]),
+  )
+  // The mot de passe of each annonce, kept apart: it never reaches a view.
+  const motsDePasse = new Map(
+    [...annonces.keys()].map((id) => [id, options.motDePasse ?? 'demo1234']),
   )
   return {
     consulterAnnonce: async (id) => annonces.get(id) ?? null,
@@ -67,9 +74,41 @@ export function createInMemoryAnnonceGateway(
         const { erreur, champ } = options.depotRefuse
         throw new ApiError(erreur, 400, champ)
       }
+      // Mirrors the API's rule on the mot de passe de l'annonce.
+      if ([...args.motDePasse].length < 8) {
+        throw new ApiError(
+          "Le mot de passe de l'annonce doit comporter au moins 8 caractères",
+          400,
+          'motDePasse',
+        )
+      }
       const annonce = toAnnonce(crypto.randomUUID(), args)
       annonces.set(annonce.id, annonce)
+      motsDePasse.set(annonce.id, args.motDePasse)
       return annonce.id
+    },
+    // Mirrors the API: the raison is checked first, then the annonce, then
+    // the mot de passe; a withdrawn annonce is gone, as a 404 would say.
+    supprimerAnnonce: async ({ id, motDePasse, raison }) => {
+      if (!raisonsDeSuppression.some(({ code }) => code === raison)) {
+        throw new ApiError(
+          'Choisissez une raison de suppression',
+          400,
+          'raison',
+        )
+      }
+      if (!annonces.has(id)) {
+        throw new ApiError('Annonce introuvable', 404)
+      }
+      if (motsDePasse.get(id) !== motDePasse) {
+        throw new ApiError(
+          "Le mot de passe de l'annonce est incorrect",
+          400,
+          'motDePasse',
+        )
+      }
+      annonces.delete(id)
+      motsDePasse.delete(id)
     },
   }
 }

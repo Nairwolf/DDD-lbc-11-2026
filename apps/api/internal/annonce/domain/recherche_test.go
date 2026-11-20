@@ -15,7 +15,7 @@ func annonceAvec(t *testing.T, titre, description string) *Annonce {
 	annonce, err := NewAnnonce(NewAnnonceArgs{
 		Titre: titre, Description: description, Prix: 50000,
 		Categorie: "loisirs", Ville: "Lyon", CodePostal: "69003",
-		Pseudo: "cycliste", Email: "cycliste@example.com", DeposeeLe: time.Now(),
+		Pseudo: "cycliste", MotDePasse: "demo1234", Email: "cycliste@example.com", DeposeeLe: time.Now(),
 	})
 	require.NoError(t, err)
 	return annonce
@@ -57,7 +57,7 @@ func TestCriteresRecherche_KeepsOnlyActiveeAnnonces(t *testing.T) {
 	cache, err := RestoreAnnonce(uuid.NewString(), Statut(""), NewAnnonceArgs{
 		Titre: velo.Titre(), Description: velo.Description(), Prix: 50000,
 		Categorie: "loisirs", Ville: "Lyon", CodePostal: "69003",
-		Pseudo: "cycliste", Email: "cycliste@example.com", DeposeeLe: time.Now(),
+		Pseudo: "cycliste", MotDePasse: "demo1234", Email: "cycliste@example.com", DeposeeLe: time.Now(),
 	})
 	require.NoError(t, err)
 
@@ -91,7 +91,7 @@ func annonceAPrix(t *testing.T, categorie string, prix int64) *Annonce {
 	annonce, err := NewAnnonce(NewAnnonceArgs{
 		Titre: "Vélo de ville", Description: "Bon état général, révisé.", Prix: prix,
 		Categorie: categorie, Ville: "Lyon", CodePostal: "69003",
-		Pseudo: "cycliste", Email: "cycliste@example.com", DeposeeLe: time.Now(),
+		Pseudo: "cycliste", MotDePasse: "demo1234", Email: "cycliste@example.com", DeposeeLe: time.Now(),
 	})
 	require.NoError(t, err)
 	return annonce
@@ -179,7 +179,7 @@ func annonceA(t *testing.T, ville, codePostal string) *Annonce {
 	annonce, err := NewAnnonce(NewAnnonceArgs{
 		Titre: "Vélo de ville", Description: "Bon état général, révisé.", Prix: 50000,
 		Categorie: "loisirs", Ville: ville, CodePostal: codePostal,
-		Pseudo: "cycliste", Email: "cycliste@example.com", DeposeeLe: time.Now(),
+		Pseudo: "cycliste", MotDePasse: "demo1234", Email: "cycliste@example.com", DeposeeLe: time.Now(),
 	})
 	require.NoError(t, err)
 	return annonce

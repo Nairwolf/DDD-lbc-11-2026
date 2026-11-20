@@ -18,6 +18,7 @@ type DeposerAnnonceCommandArgs struct {
 	Pseudo      string
 	Email       string
 	Telephone   string // optional: empty means none
+	MotDePasse  string // the mot de passe de l'annonce, at least 8 characters
 }
 
 // DeposerAnnonceCommand publishes a new annonce and returns its ID.
@@ -39,6 +40,7 @@ func BuildDeposerAnnonceCommand(repo domain.AnnonceRepository, bus eventbus.Bus,
 			Pseudo:      args.Pseudo,
 			Email:       args.Email,
 			Telephone:   args.Telephone,
+			MotDePasse:  args.MotDePasse,
 			DeposeeLe:   deposeeLe,
 		})
 		if err != nil {

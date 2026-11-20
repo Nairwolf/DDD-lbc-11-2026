@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { categories } from './categories'
+import { raisonsDeSuppression } from './raisons-suppression'
 import type {
   CriteresRecherche,
   DeposerAnnonceArgs,
@@ -87,7 +88,26 @@ export const deposerAnnonceSchema = z.object({
     .refine((telephone) => telephone === '' || /^0\d{9}$/.test(telephone), {
       message: 'Le téléphone doit comporter 10 chiffres et commencer par 0',
     }),
+  motDePasse: z
+    .string()
+    .min(
+      8,
+      "Le mot de passe de l'annonce doit comporter au moins 8 caractères",
+    ),
 }) satisfies z.ZodType<DeposerAnnonceArgs, DeposerAnnonceValues>
+
+// The suppression form: the raison and the mot de passe de l'annonce. The
+// API checks the mot de passe; the form only asks for one.
+export const supprimerAnnonceSchema = z.object({
+  raison: z
+    .string()
+    .refine((code) => raisonsDeSuppression.some((r) => r.code === code), {
+      message: 'Choisissez une raison',
+    }),
+  motDePasse: z.string().min(1, "Saisissez le mot de passe de l'annonce"),
+})
+
+export type SupprimerAnnonceValues = z.infer<typeof supprimerAnnonceSchema>
 
 // A text read from the URL (mot-clé, code, ville): a number as text, a blank
 // as none.

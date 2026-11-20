@@ -18,6 +18,7 @@ type Handler struct {
 	rechercherAnnonces query.RechercherAnnoncesQuery
 	listerRegions      query.ListerRegionsQuery
 	deposerAnnonce     command.DeposerAnnonceCommand
+	supprimerAnnonce   command.SupprimerAnnonceCommand
 }
 
 func NewHandler(
@@ -25,12 +26,14 @@ func NewHandler(
 	rechercherAnnonces query.RechercherAnnoncesQuery,
 	listerRegions query.ListerRegionsQuery,
 	deposerAnnonce command.DeposerAnnonceCommand,
+	supprimerAnnonce command.SupprimerAnnonceCommand,
 ) *Handler {
 	return &Handler{
 		consulterAnnonce:   consulterAnnonce,
 		rechercherAnnonces: rechercherAnnonces,
 		listerRegions:      listerRegions,
 		deposerAnnonce:     deposerAnnonce,
+		supprimerAnnonce:   supprimerAnnonce,
 	}
 }
 
@@ -39,6 +42,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /annonces", h.RechercherAnnonces)
 	mux.HandleFunc("GET /annonces/{id}", h.ConsulterAnnonce)
 	mux.HandleFunc("POST /annonces", h.DeposerAnnonce)
+	mux.HandleFunc("POST /annonces/{id}/suppression", h.SupprimerAnnonce)
 	mux.HandleFunc("GET /regions", h.ListerRegions)
 }
 
@@ -84,12 +88,35 @@ func (h *Handler) DeposerAnnonce(w http.ResponseWriter, r *http.Request) {
 		Pseudo:      req.Pseudo,
 		Email:       req.Email,
 		Telephone:   req.Telephone,
+		MotDePasse:  req.MotDePasse,
 	})
 	if err != nil {
 		respondDomainError(w, err)
 		return
 	}
 	respond(w, http.StatusCreated, DeposerAnnonceResponse{ID: id})
+}
+
+// SupprimerAnnonce handles POST /annonces/{id}/suppression: 204 once the
+// annonce is withdrawn, 400 naming motDePasse or raison, 404 when the annonce
+// is unknown or already supprimee.
+func (h *Handler) SupprimerAnnonce(w http.ResponseWriter, r *http.Request) {
+	var req SupprimerAnnonceRequest
+	r.Body = http.MaxBytesReader(w, r.Body, maxDepotBytes)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respond(w, http.StatusBadRequest, ErreurResponse{Erreur: "Requête invalide"})
+		return
+	}
+	err := h.supprimerAnnonce(command.SupprimerAnnonceCommandArgs{
+		ID:         r.PathValue("id"),
+		MotDePasse: req.MotDePasse,
+		Raison:     req.Raison,
+	})
+	if err != nil {
+		respondDomainError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // ConsulterAnnonce handles GET /annonces/{id}.
@@ -209,6 +236,9 @@ var invalidFields = []struct {
 	{domain.ErrRegionInconnue, "region", "Région inconnue"},
 	{domain.ErrCodeDepartementInconnu, "departement", "Département inconnu"},
 	{domain.ErrLieuAmbigu, "region", "Choisissez une région ou un département, pas les deux"},
+	{domain.ErrMotDePasseTropCourt, "motDePasse", "Le mot de passe de l'annonce doit comporter au moins 8 caractères"},
+	{domain.ErrMotDePasseIncorrect, "motDePasse", "Le mot de passe de l'annonce est incorrect"},
+	{domain.ErrRaisonSuppressionInvalide, "raison", "Choisissez une raison de suppression"},
 	{domain.ErrTelephoneInvalide, "telephone", "Le téléphone doit comporter 10 chiffres et commencer par 0"},
 }
 

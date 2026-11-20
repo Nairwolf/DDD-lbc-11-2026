@@ -23,6 +23,7 @@ func annonceArgs() domain.NewAnnonceArgs {
 		Ville:       "Ajaccio",
 		CodePostal:  "20000",
 		Pseudo:      "corsica",
+		MotDePasse:  "demo1234",
 		Email:       "corsica@example.com",
 		Telephone:   "0612345678",
 		DeposeeLe:   deposeeLe,

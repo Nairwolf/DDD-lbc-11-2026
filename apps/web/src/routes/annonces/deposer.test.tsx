@@ -12,6 +12,7 @@ const renderDepot = (
 async function remplirLeFormulaire(
   user: ReturnType<typeof userEvent.setup>,
   prix = '12,50',
+  motDePasse = 'demo1234',
 ) {
   await user.type(screen.getByLabelText(/^Titre/), 'Vélo de course')
   await user.type(
@@ -24,6 +25,7 @@ async function remplirLeFormulaire(
   await user.type(screen.getByLabelText(/^Code postal/), '69003')
   await user.type(screen.getByLabelText(/^Pseudo/), 'cycliste69')
   await user.type(screen.getByLabelText(/^Email/), 'cycliste@example.com')
+  await user.type(screen.getByLabelText(/^Mot de passe/), motDePasse)
 }
 
 const publier = () => screen.getByRole('button', { name: "Publier l'annonce" })
@@ -130,6 +132,41 @@ describe('Déposer une annonce page', () => {
     expect(
       screen.queryByText('Le code postal ne désigne aucun département'),
     ).not.toBeInTheDocument()
+  })
+
+  it('hides the mot de passe until the vendeur shows it', async () => {
+    const user = userEvent.setup()
+    await renderDepot()
+    const champ = screen.getByLabelText(/^Mot de passe/)
+
+    expect(champ).toHaveAttribute('type', 'password')
+    await user.click(screen.getByRole('button', { name: 'Afficher' }))
+    expect(champ).toHaveAttribute('type', 'text')
+    await user.click(screen.getByRole('button', { name: 'Masquer' }))
+    expect(champ).toHaveAttribute('type', 'password')
+  })
+
+  it('asks for a mot de passe of at least 8 characters under the field', async () => {
+    const user = userEvent.setup()
+    await renderDepot()
+
+    await remplirLeFormulaire(user, '12,50', 'court')
+    await user.click(publier())
+
+    expect(
+      await screen.findByText(
+        "Le mot de passe de l'annonce doit comporter au moins 8 caractères",
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'Déposer une annonce' }),
+    ).toBeInTheDocument()
+  })
+
+  it('has no confirmation field for the mot de passe', async () => {
+    await renderDepot()
+
+    expect(screen.getAllByLabelText(/mot de passe/i)).toHaveLength(1)
   })
 
   it('shows an error of the API that names no field above the button', async () => {
