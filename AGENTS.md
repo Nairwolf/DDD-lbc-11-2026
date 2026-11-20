@@ -6,6 +6,7 @@ Shared grounding for coding agents working on this repository: a pedagogical sec
 
 - **Monorepo** — `apps/api` and `apps/web`, driven by the root `Makefile`.
 - **API** (`apps/api`) — Go, standard library HTTP server, one bounded context per folder under `internal/`, in-memory adapters only (no database).
+- **E2E** (`apps/e2e`) — Playwright suite on the real stack, on its own ports (API 18080, frontend 13000), with Mailcatcher.
 - **Frontend** (`apps/web`) — TanStack Start (React 19, file-based routes), TanStack Query and Form, Tailwind CSS, Vitest + Testing Library, pnpm.
 
 | Service  | Port | Note                                    |
@@ -20,7 +21,8 @@ Run them from the repository root.
 ```bash
 make install   # API modules + frontend dependencies
 make dev       # API and frontend together
-make check     # everything CI runs: docs budget, format, lint, typecheck, tests, builds
+make check     # everything CI runs but the browsers: docs budget, format, lint, typecheck, tests, builds
+make e2e       # Playwright suite (needs Mailcatcher, started if absent)
 make test      # tests of both apps
 make up        # the same two services in Docker Compose
 ```
@@ -83,5 +85,6 @@ The team models in French, so the business vocabulary stays in French everywhere
 
 - [`apps/api/AGENTS.md`](apps/api/AGENTS.md) — API layout, commands and rules
 - [`apps/web/AGENTS.md`](apps/web/AGENTS.md) — frontend layout, commands and rules
+- [`apps/e2e/AGENTS.md`](apps/e2e/AGENTS.md) — end-to-end suite, scope and rules
 - [`documentation/`](documentation/) — glossaries, specs, tickets
 - [`prompts/`](prompts/) — the prompts worth keeping, one file each

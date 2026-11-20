@@ -1,17 +1,19 @@
 PNPM ?= pnpm
 API := apps/api
 WEB := apps/web
+E2E := apps/e2e
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev dev-api dev-web test test-api test-web lint lint-api lint-web \
+.PHONY: help install dev dev-api dev-web test test-api test-web lint lint-api lint-web lint-e2e e2e \
         build build-api build-web docs-budget check up down mail
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-12s %s\n", $$1, $$2}'
 
-install: ## Download the API modules and the frontend dependencies
+install: ## Download the API modules and the frontend and e2e dependencies
 	cd $(API) && go mod download
 	cd $(WEB) && $(PNPM) install --frozen-lockfile
+	cd $(E2E) && $(PNPM) install --frozen-lockfile
 
 dev: ## Run the API (:8080) and the frontend (:3000) together
 	@$(MAKE) -j2 dev-api dev-web
@@ -30,7 +32,11 @@ test-api: ## Run the API tests
 test-web: ## Run the frontend tests
 	cd $(WEB) && $(PNPM) test
 
-lint: lint-api lint-web ## Check format, lint and types of both apps
+e2e: ## Run the Playwright suite on its own API (:18080) and frontend (:13000), with Mailcatcher
+	@curl -sf http://localhost:1080/messages >/dev/null || $(MAKE) mail
+	cd $(E2E) && $(PNPM) exec playwright install chromium && $(PNPM) test
+
+lint: lint-api lint-web lint-e2e ## Check format, lint and types of the apps and the e2e suite
 
 lint-api: ## gofmt + go vet
 	@cd $(API) && unformatted="$$(gofmt -l .)"; \
@@ -39,6 +45,9 @@ lint-api: ## gofmt + go vet
 
 lint-web: ## Prettier + ESLint + TypeScript
 	cd $(WEB) && $(PNPM) check && $(PNPM) lint && $(PNPM) typecheck
+
+lint-e2e: ## Prettier + TypeScript on the e2e suite (no browser)
+	cd $(E2E) && $(PNPM) check && $(PNPM) typecheck
 
 build: build-api build-web ## Build both apps
 
@@ -52,7 +61,7 @@ docs-budget: ## Check the size budget of the AGENTS.md files and the glossaries
 	node tools/docs-budget/docs-budget.mjs
 	node --test tools/docs-budget/docs-budget.test.mjs
 
-check: docs-budget lint test build ## Everything CI runs
+check: docs-budget lint test build ## Everything the CI check job runs (the e2e job runs `make e2e`)
 
 up: ## Run both apps in Docker Compose
 	docker compose up --build

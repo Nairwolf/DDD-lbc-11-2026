@@ -2,6 +2,8 @@
 
 Valide les tickets `documentation/tickets/suppression/` (01, 02, 03) dans un navigateur.
 
+Partie automatisée : `apps/e2e` (`make e2e`).
+
 ## Prérequis
 
 - `make mail` (Mailcatcher : SMTP `:1025`, interface http://localhost:1080).

@@ -1,0 +1,18 @@
+{
+  "name": "e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "check": "prettier --check .",
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit"
+  },
+  "packageManager": "pnpm@12.12.1",
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@types/node": "^26.6.6",
+    "prettier": "^3.10.1",
+    "typescript": "^7.0.2"
+  }
+}

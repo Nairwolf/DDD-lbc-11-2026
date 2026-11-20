@@ -27,7 +27,7 @@ repository, not its textbook definition nor what the code shows. Format: `- **Te
   - **Driven adapter** — implements a port: a repository, a mailer.
   - **In-memory adapter** — a driven adapter holding its data in memory; the API and the tests run on them.
   - **Consumer** — a driving adapter that runs a use case when an event type is published.
-- **Composition root** — where adapters are built and injected: `main.go` (API), `gateways.ts` (frontend).
+- **Composition root** — where adapters are built and injected: `newServer` in `cmd/api/server.go` (API), `gateways.ts` (frontend).
 
 ## API: shared infrastructure
 
